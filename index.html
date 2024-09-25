@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>3D Force Graph with Grouped Colors</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="3d-graph"></div>
+
+    <!-- Three.js library -->
+    <script src="https://unpkg.com/three@0.120.0/build/three.min.js"></script>
+
+    <!-- SpriteText for text nodes -->
+    <script src="https://unpkg.com/three-spritetext@1.8.2/dist/three-spritetext.min.js"></script>
+    <script>
+        // Assign SpriteText to the THREE namespace
+        THREE.SpriteText = SpriteText;
+    </script>
+
+    <!-- 3D Force Graph library -->
+    <script src="https://unpkg.com/3d-force-graph"></script>
+
+    <script>
+        // Updated graph data with groups
+        let graphData = {
+            nodes: [
+                // Group 1
+                { id: 'AMG', group: 1 },
+                { id: 'Policies', group: 1 },
+                { id: 'QAPP', group: 1 },
+                // Group 2
+                { id: 'WorkDay', group: 2 },
+                { id: 'Timesheet', group: 2 },
+                { id: 'NewsPlatform', group: 2 },
+                // Group 3
+                { id: 'Training', group: 3 },
+                { id: 'Team Specific', group: 3 },
+                { id: 'Node 9', group: 3 }
+            ],
+            links: [
+                // Links within Group 1
+                { source: 'Node 1', target: 'Node 2' },
+                { source: 'Node 2', target: 'Node 3' },
+                { source: 'Node 3', target: 'Node 1' },
+                // Links within Group 2
+                { source: 'Node 4', target: 'Node 5' },
+                { source: 'Node 5', target: 'Node 6' },
+                { source: 'Node 6', target: 'Node 4' },
+                // Links within Group 3
+                { source: 'Node 7', target: 'Node 8' },
+                { source: 'Node 8', target: 'Node 9' },
+                { source: 'Node 9', target: 'Node 7' },
+                // Links between groups
+                { source: 'Node 3', target: 'Node 4' },
+                { source: 'Node 6', target: 'Node 7' }
+            ]
+        };
+
+        // Create the graph
+        const Graph = ForceGraph3D()
+            (document.getElementById('3d-graph'))
+            .graphData(graphData)
+            .nodeLabel('id')
+            .nodeAutoColorBy('group') // Assign colors based on group
+            .linkWidth(2)
+            .linkOpacity(0.5);
+
+        // Use text as nodes
+        Graph.nodeThreeObject(node => {
+            const sprite = new THREE.SpriteText(node.id);
+            sprite.material.depthWrite = false; // Ensure label renders in front
+            sprite.color = node.color; // Use the node's assigned color
+            sprite.textHeight = 8;
+            return sprite;
+        });
+
+        // Handle node clicks
+        Graph.onNodeClick(node => {
+            // Generate new graph data based on the clicked node
+            const newGraphData = generateNewGraphData(node);
+
+            // Update the graph with new data
+            Graph.graphData(newGraphData);
+
+            // Optional: Center the camera on the clicked node
+            Graph.cameraPosition(
+                { x: node.x, y: node.y, z: node.z + 200 }, // New position
+                node, // Look at the clicked node
+                3000  // Transition duration in ms
+            );
+        });
+
+        // Function to generate new graph data
+        function generateNewGraphData(node) {
+            const numNewNodes = 5;
+            const newNodes = [];
+            const newLinks = [];
+
+            for (let i = 1; i <= numNewNodes; i++) {
+                const newNodeId = `${node.id}-${i}`;
+                newNodes.push({ id: newNodeId, group: node.group }); // Assign the same group
+                newLinks.push({ source: node.id, target: newNodeId });
+            }
+
+            // Include the clicked node in the new data
+            newNodes.push(node);
+
+            return { nodes: newNodes, links: newLinks };
+        }
+    </script>
+
+</body>
+</html>
